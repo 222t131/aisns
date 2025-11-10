@@ -1,0 +1,5 @@
+nodea_modules
+.env
+
+npm-debug.log
+logs
