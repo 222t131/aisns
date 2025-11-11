@@ -11,7 +11,7 @@ const fetch = global.fetch;
 // Gemini SDK
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// 💡 Admin SDKの安定版構文を使用
+// Admin SDKの安定版構文を使用
 const { getFirestore } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 
@@ -21,37 +21,50 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000; 
 
+// CORSとbodyParserはアプリの先頭で定義
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(express.static(path.join(__dirname, "dist")));
 
 
-
+// --------------------------------------------------------
+// Firebase Admin SDK 初期化 (サービスアカウントキー認証)
+// --------------------------------------------------------
 let db;
 let storage;
 try {
     const FIREBASE_BUCKET = process.env.FIREBASE_BUCKET || 'aisns-c95cf.appspot.com'; 
     
-    // アプリケーションの初期化
     if (admin.apps.length === 0) {
-        // Renderは環境変数 PROJECT_ID を使うため、ここでは引数なしで初期化を試みる
-        admin.initializeApp({
-            storageBucket: FIREBASE_BUCKET,
-        });
-        console.log(`✅ Firebase Admin SDK 初期化完了。`);
+        
+        // 🚨 修正ロジック: JSON認証情報を環境変数から読み込む
+        if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+            const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+            
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount), // 認証を強制適用
+                storageBucket: FIREBASE_BUCKET,
+            });
+            console.log(`✅ Firebase Admin SDK 初期化完了 (サービスアカウント認証)。`);
+        } else {
+            // 認証情報JSONがない場合（ローカル開発用）
+             admin.initializeApp({
+                storageBucket: FIREBASE_BUCKET,
+            });
+            console.log(`✅ Firebase Admin SDK 初期化完了 (デフォルト認証)。`);
+        }
     }
     
-    // サービスインスタンスの取得 (安定版の getFirestore/getStorage を使用)
+    // サービスインスタンスの取得
     db = getFirestore(); 
     storage = getStorage().bucket();
 
 } catch (e) {
-    console.error(`🚨 Firebase Admin SDK 初期化失敗: ${e.message}`, e.stack);
+    // ログを強調: エラーがあればすぐに特定できるように
+    console.error(`🚨 Firebase Admin SDK 初期化失敗 (認証): ${e.message}`, e.stack);
     db = undefined;
     storage = undefined;
 }
-
-
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
@@ -70,10 +83,12 @@ const geminiModel = genAI.getGenerativeModel({
     },
 });
 
-
-
 app.post('/api/transform',async(req,res) => {
-    if (!db) { return res.status(500).json({ error: "Firestoreが初期化されていません。" }); }
+    // 🚨 修正点: DBが初期化できていない場合、ここでエラーを返す
+    if (!db) { 
+        console.error("APIアクセス拒否: Firestore未初期化");
+        return res.status(500).json({ error: "Firestoreが初期化されていません。" }); 
+    }
     try{
         const userText = req.body.text;
         
@@ -115,8 +130,6 @@ app.post('/api/transform',async(req,res) => {
         res.status(500).json({error:"テキストの変換に失敗"});
     }
 });
-
-
 
 app.post('/api/generate-image', async (req, res) => {
     if (!db) { return res.status(500).json({ error: "Firestoreが初期化されていません。" }); }
@@ -168,7 +181,6 @@ app.post('/api/generate-image', async (req, res) => {
         res.status(500).json({ error: "画像生成APIでエラーが発生しました。" });
     }
 });
-
 
 
 app.post('/api/archive', async (req, res) => {
