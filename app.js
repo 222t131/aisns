@@ -3,14 +3,12 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const path = require('path');
 const admin = require('firebase-admin');
-const Buffer = require('buffer').Buffer; // Node.jsのBufferを使用
+const Buffer = require('buffer').Buffer;
+const cors = require('cors');
 
-// Node.js v22でネイティブfetchを使用
 const fetch = global.fetch; 
-// Gemini SDK
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// 💡 Admin SDKの安定版構文を使用
 const { getFirestore } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 
@@ -18,32 +16,26 @@ const { getStorage } = require('firebase-admin/storage');
 dotenv.config();
 
 const app = express();
-// 🚨 Render デプロイに必須: 環境変数 PORT を優先
 const port = process.env.PORT || 3000; 
 
 // JSONペイロードのサイズ上限を50MBに引き上げ
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(express.static(path.join(__dirname, "dist")));
+app.use(cors());
 
 
-// --------------------------------------------------------
-// Firebase Admin SDK 初期化 (Functions / Render 互換性重視)
-// --------------------------------------------------------
 let db;
 let storage;
 try {
     const FIREBASE_BUCKET = process.env.FIREBASE_BUCKET || 'aisns-c95cf.appspot.com'; 
     
-    // アプリケーションの初期化
     if (admin.apps.length === 0) {
-        // Render環境では、サービスアカウント認証情報が自動でロードされます
         admin.initializeApp({
             storageBucket: FIREBASE_BUCKET,
         });
         console.log(`✅ Firebase Admin SDK 初期化完了。`);
     }
     
-    // サービスインスタンスの取得 (安定版の getFirestore/getStorage を使用)
     db = getFirestore(); 
     storage = getStorage().bucket();
 
@@ -53,9 +45,6 @@ try {
     storage = undefined;
 }
 
-// --------------------------------------------------------
-// AI クライアントの初期化
-// --------------------------------------------------------
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
@@ -74,9 +63,6 @@ const geminiModel = genAI.getGenerativeModel({
     },
 });
 
-// --------------------------------------------------------
-// 1. 文章変換エンドポイント (Gemini API)
-// --------------------------------------------------------
 
 app.post('/api/transform',async(req,res) => {
     if (!db) { return res.status(500).json({ error: "Firestoreが初期化されていません。" }); }
@@ -123,9 +109,6 @@ app.post('/api/transform',async(req,res) => {
 });
 
 
-// --------------------------------------------------------
-// 2. 画像生成エンドポイント (DALL-E API)
-// --------------------------------------------------------
 
 app.post('/api/generate-image', async (req, res) => {
     if (!db) { return res.status(500).json({ error: "Firestoreが初期化されていません。" }); }
@@ -179,9 +162,6 @@ app.post('/api/generate-image', async (req, res) => {
 });
 
 
-// --------------------------------------------------------
-// 3. アーカイブ保存エンドポイント (Firestore + Storage)
-// --------------------------------------------------------
 
 app.post('/api/archive', async (req, res) => {
     if (!db || !storage) {
@@ -210,14 +190,11 @@ app.post('/api/archive', async (req, res) => {
                 validation: 'crc32c',
             });
 
-            // StorageBucketの値をFirebase Admin SDKから取得
             const bucketName = admin.app().options.storageBucket;
-            // 公開URLを取得
             imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
             console.log(`✅ 画像をStorageに保存完了: ${imageUrl}`);
         }
 
-        // Firestoreへの保存処理
         const collectionRef = db.collection('artwork_archives'); 
 
         const docRef = await collectionRef.add({
@@ -236,9 +213,6 @@ app.post('/api/archive', async (req, res) => {
     }
 });
 
-// --------------------------------------------------------
-// 4. アーカイブ取得エンドポイント (Firestore)
-// --------------------------------------------------------
 
 app.get('/api/archives', async (req, res) => {
     if (!db) {
@@ -265,13 +239,8 @@ app.get('/api/archives', async (req, res) => {
 });
 
 
-// --------------------------------------------------------
-// 5. サーバー起動
-// --------------------------------------------------------
 
 app.get("/", (req, res) => {
-    // 💡 Renderデプロイでは静的ファイルはHostingに任せるべきですが、
-    // ローカルテスト用に残します
     res.sendFile(path.join(__dirname, "dist", "index.html")); 
 });
 
