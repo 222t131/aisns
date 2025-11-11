@@ -6,9 +6,12 @@ const admin = require('firebase-admin');
 const Buffer = require('buffer').Buffer;
 const cors = require('cors');
 
+// Node.js v22でネイティブfetchを使用
 const fetch = global.fetch; 
+// Gemini SDK
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// 💡 Admin SDKの安定版構文を使用
 const { getFirestore } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 
@@ -18,10 +21,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000; 
 
-// JSONペイロードのサイズ上限を50MBに引き上げ
+app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(express.static(path.join(__dirname, "dist")));
-app.use(cors());
+
 
 
 let db;
@@ -29,13 +32,16 @@ let storage;
 try {
     const FIREBASE_BUCKET = process.env.FIREBASE_BUCKET || 'aisns-c95cf.appspot.com'; 
     
+    // アプリケーションの初期化
     if (admin.apps.length === 0) {
+        // Renderは環境変数 PROJECT_ID を使うため、ここでは引数なしで初期化を試みる
         admin.initializeApp({
             storageBucket: FIREBASE_BUCKET,
         });
         console.log(`✅ Firebase Admin SDK 初期化完了。`);
     }
     
+    // サービスインスタンスの取得 (安定版の getFirestore/getStorage を使用)
     db = getFirestore(); 
     storage = getStorage().bucket();
 
@@ -44,6 +50,7 @@ try {
     db = undefined;
     storage = undefined;
 }
+
 
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
@@ -62,6 +69,7 @@ const geminiModel = genAI.getGenerativeModel({
         },
     },
 });
+
 
 
 app.post('/api/transform',async(req,res) => {
@@ -190,11 +198,14 @@ app.post('/api/archive', async (req, res) => {
                 validation: 'crc32c',
             });
 
+            // StorageBucketの値をFirebase Admin SDKから取得
             const bucketName = admin.app().options.storageBucket;
+            // 公開URLを取得
             imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
             console.log(`✅ 画像をStorageに保存完了: ${imageUrl}`);
         }
 
+        // Firestoreへの保存処理
         const collectionRef = db.collection('artwork_archives'); 
 
         const docRef = await collectionRef.add({
