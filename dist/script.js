@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE_URL = 'https://us-central1-gen-lang-client-0646478622.cloudfunctions.net'; 
+    const API_BASE_URL = 'https://aisns-sk05.onrender.com'; 
 	
 
 	
