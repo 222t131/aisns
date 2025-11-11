@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 言葉変換＆画像生成アーカイブ</title>
-    <!-- Tailwind CSS を読み込み -->
+    <title>AISNS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Interフォントを適用 */
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f7f7f7;
@@ -18,10 +17,9 @@
     
     <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
         <h1 class="text-3xl font-extrabold text-indigo-700 mb-6 border-b pb-2">
-            言葉のソムリエ AI アーカイブ
+            AISNS
         </h1>
 
-        <!-- 入力セクション -->
         <section id="transformForm" class="mb-10 p-6 border border-indigo-200 rounded-lg bg-indigo-50">
             <h2 class="text-xl font-bold text-indigo-600 mb-3">元文を入力</h2>
             <textarea 
@@ -38,29 +36,20 @@
             </button>
         </section>
 
-        <!-- 結果表示セクション -->
         <section class="mb-12">
             <h2 class="text-2xl font-bold text-gray-700 mb-4">🖼️ 最新の変換結果</h2>
             
-            <!-- メインコンテナ: ローディングと最終結果がここに入る -->
             <div id="result-container" class="p-6 border rounded-lg bg-white shadow-lg min-h-[150px] flex flex-col items-center justify-center">
-                <!-- ステータスメッセージ (初期表示とローディング時に使用) -->
                 <p id="statusMessage" class="text-gray-500">入力後、ここに結果と画像が表示されます。</p>
                 
-                <!-- 結果の二分割レイアウト (JavaScriptで hidden を解除) -->
                 <div id="result-content" class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center w-full hidden">
-                    <!-- 左側: テキスト情報 -->
                     <div id="result-text" class="space-y-4">
-                        <!-- テキストが入る -->
                     </div>
-                    <!-- 右側: 画像 -->
                     <div id="result-image" class="w-full">
-                        <!-- 画像が入る -->
                     </div>
                 </div>
             </div>
 
-            <!-- アーカイブボタン -->
             <div class="mt-4 pt-4 text-right">
                 <button id="archiveButton" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 disabled:opacity-50 hidden">
                     ✅ アーカイブに保存
@@ -68,10 +57,8 @@
             </div>
         </section>
 
-        <!-- アーカイブセクション -->
         <section>
             <h2 class="text-2xl font-bold text-gray-700 mb-4 border-t pt-4">📚 過去の作品アーカイブ</h2>
-            <!-- 過去の作品が JavaScript によって挿入される場所 -->
             <div id="archives" class="space-y-4">
                 <p class="text-center text-gray-500">アーカイブを読み込み中...</p>
             </div>

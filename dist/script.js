@@ -15,22 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
 		const archivesDiv = document.getElementById('archives');
 	
 		let currentResult = {};
-		
-		// ----------------------------------------------------
-		// API Helper: URL結合時にスラッシュの重複を防ぎ、Functionsのパス構造に適合させる
-		// ----------------------------------------------------
+
 		function buildApiUrl(endpoint) {
-			// API_BASE_URL (例: https://...net) の末尾に '/' を強制的に付与
 			const base = API_BASE_URL.endsWith('/') ? API_BASE_URL : API_BASE_URL + '/';
-			// エンドポイント (例: 'archives') の先頭の '/' を削除
 			const path = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-			
-			// 🚨 修正後のパス: BASE_URL/api/endpoint
-			// これでサーバー側 (Functions) の app.use('/api', router) と完全に整合します。
+
 			return `${base}api/${path}`;
 		}
 		
-		// 最初のアーカイブ読み込み
 		fetchArchives();
 	
 		sendButton.addEventListener('click', async () => {
@@ -40,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
 				return;
 			}
 	
-			// 初期状態に戻し、ローディング表示を #statusMessage に設定
 			resultContent.classList.add('hidden');
 			archiveButton.classList.add('hidden');
 			resultContainer.classList.add('justify-center');
@@ -50,8 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			currentResult = { originalText: userText };
 	
 			try {
-				// 1. 文章変換 (Gemini API 呼び出し)
-				const res = await fetch(buildApiUrl('transform'), { // URL修正
+				const res = await fetch(buildApiUrl('transform'), {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ text: userText })
@@ -71,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	
 				statusMessage.textContent = 'Step 2/3: DALL-E 3が画像を生成中 (約20秒)...';
 				
-				// 2. 画像生成 (DALL-E API 呼び出し)
-				const imgRes = await fetch(buildApiUrl('generate-image'), { // URL修正
+				//画像生成
+				const imgRes = await fetch(buildApiUrl('generate-image'), {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ imagePrompt: imagePrompt }) 
@@ -88,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
 				const base64Image = imgData.image;
 				currentResult.base64Image = base64Image;
 	
-				// 3. 結果の表示を新しい二分割コンテナに適用
 				statusMessage.classList.add('hidden');
 				resultContainer.classList.remove('justify-center');
 				resultContent.classList.remove('hidden');
@@ -114,14 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 				statusMessage.classList.remove('hidden');
 				resultContent.classList.add('hidden');
 			} finally {
-				// 特に何もしない
 			}
 		});
 	
-		// ----------------------------------------------------
-		// Archive Handler
-		// ----------------------------------------------------
-		
 		archiveButton.addEventListener('click', async () => {
 			if (!currentResult.base64Image) {
 				alert('画像データが見つかりません。');
@@ -139,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
 					base64Image: currentResult.base64Image 
 				};
 				
-				// URL修正
 				const res = await fetch(buildApiUrl('archive'), {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -154,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
 				archiveButton.disabled = true;
 				archiveButton.classList.add('hidden');
 				
-				// アーカイブを再取得して更新
 				fetchArchives();
 	
 			} catch (error) {
@@ -165,17 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
 				archiveButton.disabled = false;
 			}
 		});
-	
-	
-		// ----------------------------------------------------
-		// Archive Loader
-		// ----------------------------------------------------
 		
 		async function fetchArchives() {
 			archivesDiv.innerHTML = '<p class="text-center text-gray-500">...アーカイブを読み込み中...</p>'; 
 	
 			try {
-				// URL修正
 				const res = await fetch(buildApiUrl('archives'));
 				const archives = await res.json();
 	
@@ -189,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
 					return;
 				}
 	
-				// 成功した場合のレンダリング
 				archivesDiv.innerHTML = archives.map(archive => {
 					const timestampSeconds = archive.timestamp && archive.timestamp._seconds;
 					const date = timestampSeconds ? new Date(timestampSeconds * 1000).toLocaleString('ja-JP') : '日付不明';
