@@ -42,7 +42,8 @@ try {
     if (admin.apps.length === 0) {
         if (credentialsBase64) {
             // Base64認証情報が存在する場合、デコードして使用
-            const credentialsJson = Buffer.from(credentialsBase64, 'base64').toString('utf8');
+            // 🚨 JSONパース時の問題を回避するため、デコードした文字列をtrimする
+            const credentialsJson = Buffer.from(credentialsBase64, 'base64').toString('utf8').trim();
             const credentials = JSON.parse(credentialsJson);
 
             admin.initializeApp({
@@ -59,9 +60,8 @@ try {
         }
     }
     
-    // サービスインスタンスの取得
-    // 🚨 修正点: データベースIDを明示的に指定し、接続を強制する
-    db = getFirestore({ databaseId: '(default)' }); 
+    // サービスインスタンスの取得 (安定版の getFirestore/getStorage を使用)
+    db = getFirestore(); 
     storage = getStorage().bucket();
 
 } catch (e) {
